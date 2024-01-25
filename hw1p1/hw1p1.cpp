@@ -28,48 +28,65 @@ int main(int argc, char *argv[])
 	// Define file pointer and variables
 	FILE *file;
 	int BytesPerPixel;
-	int Size = 256;
+	int Width = 420;
+	int Height = 288;
 	
 	// Check for proper syntax
 	if (argc < 3){
 		cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
-		cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1] [Size = 256]" << endl;
+		cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1] [Size = 420*288]" << endl;
 		return 0;
 	}
 	
 	// Check if image is grayscale or color
-	if (argc < 4){
-		BytesPerPixel = 1; // default is grey image
-	} 
-	else {
-		BytesPerPixel = atoi(argv[3]);
-		// Check if size is specified
-		if (argc >= 5){
-			Size = atoi(argv[4]);
-		}
+	if (argc < 4) {
+    	BytesPerPixel = 1; // 默认为灰度图像
+	} else {
+    	BytesPerPixel = atoi(argv[3]);
+    // 检查是否指定了图像尺寸
+    	if (argc >= 5) {
+        	Width = atoi(argv[4]);
+        	if (argc >= 6) {
+            	Height = atoi(argv[5]);
+        	}
+    	}
 	}
 	
 	// Allocate image data array
-	unsigned char Imagedata[Size][Size][BytesPerPixel];
-	unsigned char*** RGBImagedata = new unsigned char**[Size];
-	for (int i = 0; i < Size; ++i) {
-    	RGBImagedata[i] = new unsigned char*[Size];
-    	for (int j = 0; j < Size; ++j) {
-        	RGBImagedata[i][j] = new unsigned char[3];
-    	}	
+	unsigned char*** Imagedata = new unsigned char**[Height];
+    for (int i = 0; i < Height; ++i) {
+        Imagedata[i] = new unsigned char*[Width];
+        for (int j = 0; j < Width; ++j) {
+            Imagedata[i][j] = new unsigned char[BytesPerPixel];
+        }
+    }
+
+    unsigned char*** RGBImagedata = new unsigned char**[Height];
+    for (int i = 0; i < Height; ++i) {
+        RGBImagedata[i] = new unsigned char*[Width];
+        for (int j = 0; j < Width; ++j) {
+            RGBImagedata[i][j] = new unsigned char[3];
+        }
+    }
+
+	// 打开文件进行读取
+	if (!(file = fopen(argv[1], "rb"))) {
+    	cout << "Cannot open file: " << argv[1] << endl;
+    	exit(1);
 	}
 
-	// Read image (filename specified by first argument) into image data matrix
-	if (!(file=fopen(argv[1],"rb"))) {
-		cout << "Cannot open file: " << argv[1] <<endl;
-		exit(1);
+	// 根据图像的宽度、高度和每像素字节大小读取数据
+	for (int i = 0; i < Height; i++) {
+    	for (int j = 0; j < Width; j++) {
+        	fread(Imagedata[i][j], sizeof(unsigned char), BytesPerPixel, file);
+    	}
 	}
-	fread(Imagedata, sizeof(unsigned char), Size*Size*BytesPerPixel, file);
+
+	// 关闭文件
 	fclose(file);
 
-
-	for (int i = 0; i < Size; ++i) {
-    	for (int j = 0; j < Size; ++j) {
+	for (int i = 0; i < Height; ++i) {
+    	for (int j = 0; j < Width; ++j) {
         	if (isRed(i, j)) {
 				RGBImagedata[i][j][0] = Imagedata[i][j][0];
 				float blue = 0.0;
@@ -83,19 +100,19 @@ int main(int argc, char *argv[])
 						blue += Imagedata[i-1][j-1][0];
 						countblue++;
 					}
-					if(j<Size-1){
+					if(j<Width-1){
 						blue += Imagedata[i-1][j+1][0];
 						countblue++;
 					}
 				}
-				if(i<Size-1){
+				if(i<Height-1){
 					green += Imagedata[i+1][j][0];
 					countgreen++;
 					if(j>0){
 						blue += Imagedata[i+1][j-1][0];
 						countblue++;
 					}
-					if(j<Size-1){
+					if(j<Width-1){
 						blue += Imagedata[i+1][j+1][0];
 						countblue++;
 					}
@@ -104,7 +121,7 @@ int main(int argc, char *argv[])
 					green += Imagedata[i][j-1][0];
 					countgreen++;
 				}
-				if(j<Size-1){
+				if(j<Width-1){
 					green += Imagedata[i][j+1][0];
 					countgreen++;
 				}
@@ -130,19 +147,19 @@ int main(int argc, char *argv[])
 						red += Imagedata[i-1][j-1][0];
 						countred++;
 					}
-					if(j<Size-1){
+					if(j<Width-1){
 						red += Imagedata[i-1][j+1][0];
 						countred++;
 					}
 				}
-				if(i<Size-1){
+				if(i<Height-1){
 					green += Imagedata[i+1][j][0];
 					countgreen++;
 					if(j>0){
 						red += Imagedata[i+1][j-1][0];
 						countred++;
 					}
-					if(j<Size-1){
+					if(j<Width-1){
 						red += Imagedata[i+1][j+1][0];
 						countred++;
 					}
@@ -151,7 +168,7 @@ int main(int argc, char *argv[])
 					green += Imagedata[i][j-1][0];
 					countgreen++;
 				}
-				if(j<Size-1){
+				if(j<Width-1){
 					green += Imagedata[i][j+1][0];
 					countgreen++;
 				}
@@ -173,7 +190,7 @@ int main(int argc, char *argv[])
 					red+= Imagedata[i-1][j][0];
 					countred++;
 				}
-				if(i<Size-1){
+				if(i<Height-1){
 					red += Imagedata[i+1][j][0];
 					countred++;
 				}
@@ -181,7 +198,7 @@ int main(int argc, char *argv[])
 					blue += Imagedata[i][j-1][0];
 					countblue++;
 				}
-				if(j<Size-1){
+				if(j<Width-1){
 					blue += Imagedata[i][j+1][0];
 					countblue++;
 				}
@@ -204,15 +221,15 @@ int main(int argc, char *argv[])
 		cout << "Cannot open file: " << argv[2] << endl;
 		exit(1);
 	}
-	for (int i = 0; i < Size; ++i) {
-    	for (int j = 0; j < Size; ++j) {
+	for (int i = 0; i < Height; ++i) {
+    	for (int j = 0; j < Width; ++j) {
         	fwrite(RGBImagedata[i][j], sizeof(unsigned char), 3, file);
     	}
 	}
 
 	fclose(file);
-	for (int i = 0; i < Size; ++i) {
-    	for (int j = 0; j < Size; ++j) {
+	for (int i = 0; i < Height; ++i) {
+    	for (int j = 0; j < Width; ++j) {
         	delete[] RGBImagedata[i][j];
     	}
     	delete[] RGBImagedata[i];
