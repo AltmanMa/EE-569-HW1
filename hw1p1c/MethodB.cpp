@@ -68,7 +68,7 @@ void equalizeHistCustom(Mat &src, Mat &dst) {
 
 int main(int argc, char *argv[]) {
     FILE *file;
-    int BytesPerPixel;
+    int BytesPerPixel = 3;
     int Width = 750;  // Image width
     int Height = 422; // Image height
     
@@ -80,10 +80,10 @@ int main(int argc, char *argv[]) {
     }
     
     // Check if image is grayscale or color
-    if (argc < 4){
-        BytesPerPixel = 1; // Default is grey image
-    } else {
-        BytesPerPixel = atoi(argv[3]);
+    if (argc < 3){
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "program_name input_image.raw output_image.raw" << endl;
+        return 0;
     }
     
     // Allocate image data array
@@ -117,6 +117,13 @@ int main(int argc, char *argv[]) {
 
     // Convert back to RGB
     cvtColor(imageYUV, resultImage, COLOR_YUV2RGB);
+
+    if (!(file = fopen(argv[2], "wb"))) {
+        cout << "Cannot open file: " << argv[2] << endl;
+        exit(1);
+    }
+    fwrite(resultImage.data, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
+    fclose(file);
 
     // Display and save results
     imshow("Original Image", image);
