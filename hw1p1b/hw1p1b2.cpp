@@ -1,6 +1,8 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,60 +10,56 @@
 using namespace std;
 using namespace cv;
 
-void plotHistogram(const unsigned char imageData[][256][1], int size, int BytesPerPixel);
+// Function to plot histogram
+void plotHistogram(unsigned char* imageData, int width, int height, int BytesPerPixel);
 
 int main(int argc, char *argv[]) {
     // Define file pointer and variables
     FILE *file;
     int BytesPerPixel;
-    int Size = 256;
+    int Width = 596;  // Image width
+    int Height = 340; // Image height
     
     // Check for proper syntax
     if (argc < 3){
         cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
-        cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1] [Size = 256]" << endl;
+        cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1]" << endl;
         return 0;
     }
     
     // Check if image is grayscale or color
     if (argc < 4){
-        BytesPerPixel = 1; // default is grey image
-    } 
-    else {
+        BytesPerPixel = 1; // Default is grey image
+    } else {
         BytesPerPixel = atoi(argv[3]);
-        // Check if size is specified
-        if (argc >= 5){
-            Size = atoi(argv[4]);
-        }
     }
     
     // Allocate image data array
-    unsigned char* Imagedata = new unsigned char[Size * Size * BytesPerPixel];
+    unsigned char* Imagedata = new unsigned char[Width * Height * BytesPerPixel];
 
     // Read image (filename specified by first argument) into image data matrix
     if (!(file=fopen(argv[1],"rb"))) {
-        cout << "Cannot open file: " << argv[1] <<endl;
+        cout << "Cannot open file: " << argv[1] << endl;
         exit(1);
     }
-    fread(Imagedata, sizeof(unsigned char), Size * Size * BytesPerPixel, file);
+    fread(Imagedata, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
     fclose(file);
 
     // Plot histogram
-    plotHistogram(Imagedata, Size, BytesPerPixel);
+    plotHistogram(Imagedata, Width, Height, BytesPerPixel);
 
     delete[] Imagedata;
     return 0;
 }
 
-
-void plotHistogram(unsigned char* imageData, int size, int BytesPerPixel) {
+void plotHistogram(unsigned char* imageData, int width, int height, int BytesPerPixel) {
     int hist[256] = {0};
 
     // Calculate histogram
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
             for (int k = 0; k < BytesPerPixel; k++) {
-                int index = (i * size + j) * BytesPerPixel + k;
+                int index = (i * width + j) * BytesPerPixel + k;
                 hist[imageData[index]]++;
             }
         }
@@ -73,15 +71,11 @@ void plotHistogram(unsigned char* imageData, int size, int BytesPerPixel) {
     Mat histImage(hist_h, hist_w, CV_8UC1, Scalar(0));
 
     // Normalize the histogram
-    int max = hist[0];
-    for (int i = 1; i < 256; i++) {
-        if (max < hist[i]) {
-            max = hist[i];
-        }
-    }
+    int max = *max_element(hist, hist + 256);
     for (int i = 0; i < 256; i++) {
         hist[i] = ((double)hist[i] / max) * histImage.rows;
     }
+
     // Draw each bin of histogram
     for (int i = 0; i < 256; i++) {
         cv::line(histImage, cv::Point(bin_w * i, hist_h),
