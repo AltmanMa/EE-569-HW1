@@ -8,6 +8,8 @@ using namespace cv;
 // Function to read a RAW image file into a Mat object
 Mat readRawImage(const char* filename, int width, int height) {
     FILE* file = fopen(filename, "rb");
+    cout << "Fopen success. Continuing..." << endl;
+
     if (!file) {
         cerr << "Cannot open file: " << filename << endl;
         exit(1);

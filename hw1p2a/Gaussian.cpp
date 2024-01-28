@@ -40,8 +40,17 @@ void saveRawImage(const char* filename, const Mat& image) {
         return;
     }
 
-    size_t written = fwrite(image.data, sizeof(uchar), image.total(), file);
-    if (written != image.total()) {
+    int width = image.cols;
+    int height = image.rows;
+    int bytesPerPixel = image.channels(); // 对于单通道图像，这将是1
+    cout << "width: " << width << endl;
+    cout << "height: " << height << endl;
+    cout << "bytesPerPixel: " << bytesPerPixel << endl;
+    size_t totalBytes = width * height * bytesPerPixel;
+    
+    size_t written = fwrite(image.data, sizeof(unsigned char), totalBytes, file);
+
+    if (written != totalBytes) {
         cerr << "Error writing the image data to file: " << filename << endl;
     } else {
         cout << "Image successfully saved as: " << filename << endl;
