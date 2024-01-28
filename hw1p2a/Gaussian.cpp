@@ -8,38 +8,67 @@
 using namespace cv;
 using namespace std;
 
-void ApplyUniformFilter(Mat &inputImage, Mat &outputImage) {
-    // Assuming filterSize is odd and square
-    int filterSize = 3;
-    int pad = filterSize / 2;
-    Mat paddedInput;
-    
-    // Create padded version of inputImage
-    copyMakeBorder(inputImage, paddedInput, pad, pad, pad, pad, BORDER_REPLICATE);
-    
-    for (int i = pad; i < inputImage.rows + pad; ++i) {
-        for (int j = pad; j < inputImage.cols + pad; ++j) {
-            int sum = 0; // Use an integer to accumulate the sum
-            for (int fi = -pad; fi <= pad; ++fi) {
-                for (int fj = -pad; fj <= pad; ++fj) {
-                    sum += (int)paddedInput.at<uchar>(i + fi, j + fj); // Cast uchar to int
-                }
-            }
-            outputImage.at<uchar>(i - pad, j - pad) = sum / (filterSize * filterSize);
+// Function to create a Gaussian kernel
+Mat createGaussianKernel(int filterSize, double sigma) {
+    Mat kernel = Mat(filterSize, filterSize, CV_64F);
+    double r, s = 2.0 * sigma * sigma;
+
+    // sum is for normalization
+    double sum = 0.0;
+
+    // Generate kernel
+    for (int x = -filterSize/2; x <= filterSize/2; x++) {
+        for (int y = -filterSize/2; y <= filterSize/2; y++) {
+            r = sqrt(x*x + y*y);
+            kernel.at<double>(x + filterSize/2, y + filterSize/2) = (exp(-(r*r)/s)) / (M_PI * s);
+            sum += kernel.at<double>(x + filterSize/2, y + filterSize/2);
         }
     }
+
+    // Normalize the kernel
+    for (int i = 0; i < filterSize; ++i)
+        for (int j = 0; j < filterSize; ++j)
+            kernel.at<double>(i, j) /= sum;
+
+    return kernel;
 }
+
 void saveRawImage(const char* filename, const Mat& image) {
     FILE* file = fopen(filename, "wb");
     if (!file) {
-        cerr << "Cannot open file: " << filename << endl;
-        exit(1);
+        cerr << "Cannot open file for writing: " << filename << endl;
+        return;
     }
 
-    fwrite(image.data, sizeof(uchar), image.total(), file);
+    size_t written = fwrite(image.data, sizeof(uchar), image.total(), file);
+    if (written != image.total()) {
+        cerr << "Error writing the image data to file: " << filename << endl;
+    } else {
+        cout << "Image successfully saved as: " << filename << endl;
+    }
     fclose(file);
 }
 
+// Function to apply Gaussian filter
+void ApplyGaussianFilter(Mat &inputImage, Mat &outputImage, int filterSize, double sigma) {
+    int pad = filterSize / 2;
+    Mat paddedInput;
+    Mat kernel = createGaussianKernel(filterSize, sigma);
+
+    copyMakeBorder(inputImage, paddedInput, pad, pad, pad, pad, BORDER_REPLICATE);
+
+    for (int i = pad; i < inputImage.rows + pad; ++i) {
+        for (int j = pad; j < inputImage.cols + pad; ++j) {
+            double sum = 0.0; 
+            for (int fi = -pad; fi <= pad; ++fi) {
+                for (int fj = -pad; fj <= pad; ++fj) {
+                    sum += paddedInput.at<uchar>(i + fi, j + fj) * kernel.at<double>(fi + pad, fj + pad);
+                }
+            }
+            outputImage.at<uchar>(i - pad, j - pad) = static_cast<uchar>(sum);
+        }
+    }
+}
 int main(int argc, char** argv) {
     // Check for proper syntax
     if (argc != 3) {
@@ -65,7 +94,7 @@ int main(int argc, char** argv) {
     Mat outputImage = Mat::zeros(inputImage.size(), inputImage.type());
 
     // Apply uniform filter to the input image
-    ApplyUniformFilter(inputImage, outputImage);
+    ApplyGaussianFilter(inputImage, outputImage, 3, 3);
 
     // Display the original and filtered images
     namedWindow("Original Image", WINDOW_AUTOSIZE);
@@ -73,10 +102,9 @@ int main(int argc, char** argv) {
 
     namedWindow("Filtered Image", WINDOW_AUTOSIZE);
     imshow("Filtered Image", outputImage);
-    imwrite("uniform.jpg", outputImage);
+    imwrite("Gaussian fixed.jpg", outputImage);
 
     waitKey(0); // Wait for a keystroke in the window
-
 
     string rawOutputFilename = string(argv[2]);
     saveRawImage(rawOutputFilename.c_str(), outputImage);
