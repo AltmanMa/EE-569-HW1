@@ -47,7 +47,7 @@ void saveRawImage(const char* filename, const Mat& image) {
     cout << "height: " << height << endl;
     cout << "bytesPerPixel: " << bytesPerPixel << endl;
     size_t totalBytes = width * height * bytesPerPixel;
-    
+
     size_t written = fwrite(image.data, sizeof(unsigned char), totalBytes, file);
 
     if (written != totalBytes) {
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
 
     namedWindow("Filtered Image", WINDOW_AUTOSIZE);
     imshow("Filtered Image", outputImage);
-    imwrite("Gaussian fixed.jpg", outputImage);
+    imwrite("Gaussian_fixed.jpg", outputImage);
 
     waitKey(0); // Wait for a keystroke in the window
 

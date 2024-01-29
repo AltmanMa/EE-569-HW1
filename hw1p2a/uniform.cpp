@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 
     namedWindow("Filtered Image", WINDOW_AUTOSIZE);
     imshow("Filtered Image", outputImage);
-    imwrite("uniform.jpg", outputImage);
+    imwrite("uniform_fixed.jpg", outputImage);
 
     waitKey(0); // Wait for a keystroke in the window
 
