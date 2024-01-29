@@ -43,30 +43,33 @@ int main(int argc, char *argv[]) {
     const int Width = atoi(argv[3]); 
     const int Height = atoi(argv[4]); 
     
-    unsigned char* Imagedata = new unsigned char[Width * Height];
+    unsigned char* Imagedata = new unsigned char[Width * Height * 3]; // 3 channels for RGB
 
-    // Read image 
+    // Read image (filename specified by first argument) into image data matrix
     FILE *file;
     if (!(file = fopen(argv[1], "rb"))) {
         cout << "Cannot open file: " << argv[1] << endl;
         delete[] Imagedata;
         return -1;
     }
-    fread(Imagedata, sizeof(unsigned char), Width * Height, file);
+    fread(Imagedata, sizeof(unsigned char), Width * Height * 3, file); // Read 3 channels
     fclose(file);
 
     // Initialize Mat object from array
-    Mat image(Height, Width, CV_8UC1, Imagedata);
+    Mat image(Height, Width, CV_8UC3, Imagedata);
+    Mat correctedImage; //Change RGB to BGR for opencv Processing
+    cvtColor(image, correctedImage, COLOR_RGB2BGR);
+
     Mat filteredImage;
 
     // NLM Filter parameters
     float h = 10; // Luminance filter strength
-    float hForColorComponents = 10; // Color filter strength 
+    float hForColorComponents = 10; // Color filter strength (if using a color image)
     int templateWindowSize = 7; // Odd number (3, 5, 7...)
     int searchWindowSize = 21; // Odd number (21, 31, 41...)
 
     // Apply Non-Local Means Denoising
-    fastNlMeansDenoising(image, filteredImage, h, templateWindowSize, searchWindowSize);
+    fastNlMeansDenoisingColored(correctedImage, filteredImage, h, hForColorComponents, templateWindowSize, searchWindowSize);
 
     // Save the filtered image to a raw file
     if (!(file = fopen(argv[2], "wb"))) {
@@ -84,7 +87,7 @@ int main(int argc, char *argv[]) {
     namedWindow("Filtered Image", WINDOW_AUTOSIZE);
     imshow("Filtered Image", filteredImage);
 
-    imwrite("NLM_filtered.jpg", filteredImage);
+    imwrite("NLM_filtered_RBG.jpg", filteredImage);
 
     string rawOutputFilename = string(argv[2]);
     saveRawImage(rawOutputFilename.c_str(), filteredImage);
