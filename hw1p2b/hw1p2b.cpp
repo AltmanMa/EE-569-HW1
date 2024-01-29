@@ -39,10 +39,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    const int Width = atoi(argv[3]);  // Image width
-    const int Height = atoi(argv[4]); // Image height
+    const int Width = atoi(argv[3]); 
+    const int Height = atoi(argv[4]); 
     
-    // Allocate image data array for a grayscale image
     unsigned char* Imagedata = new unsigned char[Width * Height];
 
     // Read image (filename specified by first argument) into image data matrix
@@ -59,7 +58,6 @@ int main(int argc, char *argv[]) {
 
     // Apply bilateral filter
     Mat filteredImage;
-    // You need to choose these parameters depending on your noise and image characteristics
     double sigmaColor = 25.0; // This value will vary depending on your image
     double sigmaSpace = 25.0; // This value will vary depending on your image
     ApplyBilateralFilter(image, filteredImage, 5, sigmaColor, sigmaSpace);

@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
 // Define file pointer and variables
     FILE *file;
     int BytesPerPixel;
-    int Width = 596;  // Image width
-    int Height = 340; // Image height
+    int Width = 596;
+    int Height = 340;
     
     // Check for proper syntax
     if (argc < 3){
@@ -67,9 +67,6 @@ int main(int argc, char *argv[]) {
     fread(Imagedata, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
     fclose(file);
 
-    // Define the transfer function parameters
-    float a = 1.5; // scale factor
-    float b = 0;   // offset
 
     Mat image(Height, Width, CV_8UC1, Imagedata); /
 

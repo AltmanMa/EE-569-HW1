@@ -50,7 +50,6 @@ int main(int argc, char *argv[]) {
     // Allocate image data array
     unsigned char* Imagedata = new unsigned char[Width * Height * BytesPerPixel];
 
-    // Read image (filename specified by first argument) into image data matrix
     if (!(file=fopen(argv[1],"rb"))) {
         cout << "Cannot open file: " << argv[1] << endl;
         exit(1);
@@ -59,8 +58,8 @@ int main(int argc, char *argv[]) {
     fclose(file);
 
     // Define the transfer function parameters
-    float a = 1.5; // scale factor
-    float b = 0;   // offset
+    float a = 1.5; // set scale factor to improve contrast
+    float b = 60;   // Choose 60 as offset to make the image brighter
 
     applyTransferFunction(Imagedata, Width, Height, BytesPerPixel, a, b);
 

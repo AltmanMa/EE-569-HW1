@@ -82,7 +82,6 @@ int main(int argc, char *argv[])
     	}
 	}
 
-	// 关闭文件
 	fclose(file);
 
 	for (int i = 0; i < Height; ++i) {
