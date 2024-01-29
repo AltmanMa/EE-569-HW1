@@ -42,7 +42,7 @@ void saveRawImage(const char* filename, const Mat& image) {
 
     int width = image.cols;
     int height = image.rows;
-    int bytesPerPixel = image.channels(); // 对于单通道图像，这将是1
+    int bytesPerPixel = image.channels(); 
     cout << "width: " << width << endl;
     cout << "height: " << height << endl;
     cout << "bytesPerPixel: " << bytesPerPixel << endl;
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     Mat outputImage = Mat::zeros(inputImage.size(), inputImage.type());
 
     // Apply uniform filter to the input image
-    ApplyGaussianFilter(inputImage, outputImage, 3, 3);
+    ApplyGaussianFilter(inputImage, outputImage, 3, 7);
 
     // Display the original and filtered images
     namedWindow("Original Image", WINDOW_AUTOSIZE);
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
 
     namedWindow("Filtered Image", WINDOW_AUTOSIZE);
     imshow("Filtered Image", outputImage);
-    imwrite("Gaussian_fixed.jpg", outputImage);
+    imwrite("Gaussian_fixed_7x7.jpg", outputImage);
 
     waitKey(0); // Wait for a keystroke in the window
 
