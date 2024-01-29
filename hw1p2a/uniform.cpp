@@ -19,7 +19,7 @@ void ApplyUniformFilter(Mat &inputImage, Mat &outputImage) {
     
     for (int i = pad; i < inputImage.rows + pad; ++i) {
         for (int j = pad; j < inputImage.cols + pad; ++j) {
-            int sum = 0; // Use an integer to accumulate the sum
+            int sum = 0; 
             for (int fi = -pad; fi <= pad; ++fi) {
                 for (int fj = -pad; fj <= pad; ++fj) {
                     sum += (int)paddedInput.at<uchar>(i + fi, j + fj); // Cast uchar to int
