@@ -62,20 +62,19 @@ int main(int argc, char *argv[]) {
     float a = 1.5; // scale factor
     float b = 0;   // offset
 
-    // Apply the transfer function to the image
     applyTransferFunction(Imagedata, Width, Height, BytesPerPixel, a, b);
 
-    // Display the modified image
     Mat modifiedImage(Height, Width, CV_8UC1, Imagedata);
     imshow("Modified Image", modifiedImage);
+    imwrite("Enhanced_imageA.jpg", modifiedImage); 
 
-    // Plot the transfer function
     Mat transferFunctionPlot = Mat::zeros(256, 256, CV_8UC1);
     for (int i = 0; i < 256; i++) {
         int output = linearTransferFunction(i, a, b);
         line(transferFunctionPlot, Point(i, 255), Point(i, 255 - output), Scalar(255), 1);
     }
     imshow("Transfer Function", transferFunctionPlot);
+    imwrite("transfer_function.jpg", transferFunctionPlot); 
 
     waitKey(0);
 

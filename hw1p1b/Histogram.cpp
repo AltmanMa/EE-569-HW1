@@ -85,5 +85,6 @@ void plotHistogram(unsigned char* imageData, int width, int height, int BytesPer
 
     // Display histogram
     cv::imshow("Histogram", histImage);
+    cv::imwrite("Histogram.jpg", histImage);
     cv::waitKey(0);
 }

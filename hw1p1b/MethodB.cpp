@@ -71,22 +71,19 @@ int main(int argc, char *argv[]) {
     float a = 1.5; // scale factor
     float b = 0;   // offset
 
-    Mat image(Height, Width, CV_8UC1, Imagedata); // 创建OpenCV Mat对象
+    Mat image(Height, Width, CV_8UC1, Imagedata); /
 
-    // 计算并展示原始图像的直方图
     Mat histBefore = plotHistogram(image);
     imshow("Histogram Before", histBefore);
     imwrite("histogram_beforeB.jpg", histBefore);
-    // 应用直方图均衡化增强图像
+
     Mat enhancedImage;
     equalizeHist(image, enhancedImage);
 
-    // 计算并展示增强后图像的直方图
     Mat histAfter = plotHistogram(enhancedImage);
     imshow("Histogram After", histAfter);
-    imwrite("histogram_afterB.jpg", histAfter); // 保存增强后的直方图
+    imwrite("histogram_afterB.jpg", histAfter); 
 
-    // 展示原始图像和增强后的图像
     imshow("Original Image", image);
     imshow("Enhanced Image", enhancedImage);
     imwrite("enhanced_imageB.jpg", enhancedImage);
