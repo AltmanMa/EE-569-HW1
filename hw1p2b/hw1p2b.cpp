@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
 
     // Apply bilateral filter
     Mat filteredImage;
-    double sigmaColor = 25.0; // This value will vary depending on your image
-    double sigmaSpace = 25.0; // This value will vary depending on your image
+    double sigmaColor = 30.0; 
+    double sigmaSpace = 30.0; 
     ApplyBilateralFilter(image, filteredImage, 5, sigmaColor, sigmaSpace);
 
     // Save the filtered image to a raw file
