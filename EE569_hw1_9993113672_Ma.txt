@@ -1,0 +1,1345 @@
+<hw1p1a.cpp>
+// This sample code reads in image data from a RAW image file and 
+// writes it into another file
+
+// NOTE:	The code assumes that the image is of size 256 x 256 and is in the
+//			RAW format. You will need to make corresponding changes to
+//			accommodate images of different sizes and/or types
+
+#include <stdio.h>
+#include <iostream>
+#include <stdlib.h>
+
+using namespace std;
+bool isRed(int i, int j) {
+    return i % 2 != 0 && j % 2 == 0;
+}
+
+bool isBlue(int i, int j) {
+    return i % 2 == 0 && j % 2 != 0;
+}
+
+bool isGreen(int i, int j) {
+    return !isRed(i, j) && !isBlue(i, j);
+}
+
+int main(int argc, char *argv[])
+
+{
+	// Define file pointer and variables
+	FILE *file;
+	int BytesPerPixel;
+	int Width = 420;
+	int Height = 288;
+	
+	// Check for proper syntax
+	if (argc < 3){
+		cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+		cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1] [Size = 420*288]" << endl;
+		return 0;
+	}
+	
+	// Check if image is grayscale or color
+	if (argc < 4) {
+    	BytesPerPixel = 1; 
+	} else {
+    	BytesPerPixel = atoi(argv[3]);
+    	if (argc >= 5) {
+        	Width = atoi(argv[4]);
+        	if (argc >= 6) {
+            	Height = atoi(argv[5]);
+        	}
+    	}
+	}
+	
+	// Allocate image data array
+	unsigned char*** Imagedata = new unsigned char**[Height];
+    for (int i = 0; i < Height; ++i) {
+        Imagedata[i] = new unsigned char*[Width];
+        for (int j = 0; j < Width; ++j) {
+            Imagedata[i][j] = new unsigned char[BytesPerPixel];
+        }
+    }
+
+    unsigned char*** RGBImagedata = new unsigned char**[Height];
+    for (int i = 0; i < Height; ++i) {
+        RGBImagedata[i] = new unsigned char*[Width];
+        for (int j = 0; j < Width; ++j) {
+            RGBImagedata[i][j] = new unsigned char[3];
+        }
+    }
+
+	if (!(file = fopen(argv[1], "rb"))) {
+    	cout << "Cannot open file: " << argv[1] << endl;
+    	exit(1);
+	}
+
+	for (int i = 0; i < Height; i++) {
+    	for (int j = 0; j < Width; j++) {
+        	fread(Imagedata[i][j], sizeof(unsigned char), BytesPerPixel, file);
+    	}
+	}
+
+	fclose(file);
+
+	for (int i = 0; i < Height; ++i) {
+    	for (int j = 0; j < Width; ++j) {
+        	if (isRed(i, j)) {
+				RGBImagedata[i][j][0] = Imagedata[i][j][0];
+				float blue = 0.0;
+				float green = 0.0;
+				int countblue = 0;
+				int countgreen = 0;
+				if(i>0){
+					green += Imagedata[i-1][j][0];
+					countgreen++;
+					if(j>0){
+						blue += Imagedata[i-1][j-1][0];
+						countblue++;
+					}
+					if(j<Width-1){
+						blue += Imagedata[i-1][j+1][0];
+						countblue++;
+					}
+				}
+				if(i<Height-1){
+					green += Imagedata[i+1][j][0];
+					countgreen++;
+					if(j>0){
+						blue += Imagedata[i+1][j-1][0];
+						countblue++;
+					}
+					if(j<Width-1){
+						blue += Imagedata[i+1][j+1][0];
+						countblue++;
+					}
+				}
+				if(j>0){
+					green += Imagedata[i][j-1][0];
+					countgreen++;
+				}
+				if(j<Width-1){
+					green += Imagedata[i][j+1][0];
+					countgreen++;
+				}
+				if (countgreen != 0){
+					RGBImagedata[i][j][1] = green/countgreen;
+					}
+				if (countblue != 0) {
+					RGBImagedata[i][j][2] = blue/countblue;
+					}
+
+            // Interpolate missing green and blue values for a red pixel
+            // Be careful at the image boundaries
+        	} else if (isBlue(i, j)) {
+				RGBImagedata[i][j][2] = Imagedata[i][j][0];
+				float red = 0.0;
+				float green = 0.0;
+				int countred = 0;
+				int countgreen = 0;
+				if(i>0){
+					green += Imagedata[i-1][j][0];
+					countgreen++;
+					if(j>0){
+						red += Imagedata[i-1][j-1][0];
+						countred++;
+					}
+					if(j<Width-1){
+						red += Imagedata[i-1][j+1][0];
+						countred++;
+					}
+				}
+				if(i<Height-1){
+					green += Imagedata[i+1][j][0];
+					countgreen++;
+					if(j>0){
+						red += Imagedata[i+1][j-1][0];
+						countred++;
+					}
+					if(j<Width-1){
+						red += Imagedata[i+1][j+1][0];
+						countred++;
+					}
+				}
+				if(j>0){
+					green += Imagedata[i][j-1][0];
+					countgreen++;
+				}
+				if(j<Width-1){
+					green += Imagedata[i][j+1][0];
+					countgreen++;
+				}
+				if (countgreen != 0) {
+					RGBImagedata[i][j][1] = green/countgreen;
+					}
+				if (countred != 0) {
+					RGBImagedata[i][j][0] = red/countred;
+					}
+            	// Interpolate missing green and red values for a blue pixel
+            	// Be careful at the image boundaries
+        	} else {
+				RGBImagedata[i][j][1] = Imagedata[i][j][0];
+				float red = 0.0;
+				float blue = 0.0;
+				int countred = 0;
+				int countblue = 0;
+				if(i>0){
+					red+= Imagedata[i-1][j][0];
+					countred++;
+				}
+				if(i<Height-1){
+					red += Imagedata[i+1][j][0];
+					countred++;
+				}
+				if(j>0){
+					blue += Imagedata[i][j-1][0];
+					countblue++;
+				}
+				if(j<Width-1){
+					blue += Imagedata[i][j+1][0];
+					countblue++;
+				}
+				if (countblue != 0) {
+					RGBImagedata[i][j][2] = blue/countblue;
+					}
+				if (countred != 0) {
+					RGBImagedata[i][j][0] = red/countred;
+				}
+            	// Interpolate missing red and blue values for a green pixel
+            	// Be careful at the image boundaries
+            	// Remember to differentiate between green pixels in red rows and blue rows
+        	}
+    	}
+	}
+
+	// Write image data (filename specified by second argument) from image data matrix
+
+	if (!(file=fopen(argv[2],"wb"))) {
+		cout << "Cannot open file: " << argv[2] << endl;
+		exit(1);
+	}
+	for (int i = 0; i < Height; ++i) {
+    	for (int j = 0; j < Width; ++j) {
+        	fwrite(RGBImagedata[i][j], sizeof(unsigned char), 3, file);
+    	}
+	}
+
+	fclose(file);
+	for (int i = 0; i < Height; ++i) {
+    	for (int j = 0; j < Width; ++j) {
+        	delete[] RGBImagedata[i][j];
+    	}
+    	delete[] RGBImagedata[i];
+	}
+	delete[] RGBImagedata;
+
+	return 0;
+}
+
+<histogram.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace std;
+using namespace cv;
+
+// Function to plot histogram
+void plotHistogram(unsigned char* imageData, int width, int height, int BytesPerPixel);
+
+int main(int argc, char *argv[]) {
+    // Define file pointer and variables
+    FILE *file;
+    int BytesPerPixel;
+    int Width = 596;  // Image width
+    int Height = 340; // Image height
+    
+    // Check for proper syntax
+    if (argc < 3){
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1]" << endl;
+        return 0;
+    }
+    
+    // Check if image is grayscale or color
+    if (argc < 4){
+        BytesPerPixel = 1; // Default is grey image
+    } else {
+        BytesPerPixel = atoi(argv[3]);
+    }
+    
+    // Allocate image data array
+    unsigned char* Imagedata = new unsigned char[Width * Height * BytesPerPixel];
+
+    // Read image (filename specified by first argument) into image data matrix
+    if (!(file=fopen(argv[1],"rb"))) {
+        cout << "Cannot open file: " << argv[1] << endl;
+        exit(1);
+    }
+    fread(Imagedata, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
+    fclose(file);
+
+    // Plot histogram
+    plotHistogram(Imagedata, Width, Height, BytesPerPixel);
+
+    delete[] Imagedata;
+    return 0;
+}
+
+void plotHistogram(unsigned char* imageData, int width, int height, int BytesPerPixel) {
+    int hist[256] = {0};
+
+    // Calculate histogram
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            for (int k = 0; k < BytesPerPixel; k++) {
+                int index = (i * width + j) * BytesPerPixel + k;
+                hist[imageData[index]]++;
+            }
+        }
+    }
+
+    // Create histogram image
+    int hist_w = 512; int hist_h = 400;
+    int bin_w = cvRound((double)hist_w / 256);
+    Mat histImage(hist_h, hist_w, CV_8UC1, Scalar(0));
+
+    // Normalize the histogram
+    int max = *max_element(hist, hist + 256);
+    for (int i = 0; i < 256; i++) {
+        hist[i] = ((double)hist[i] / max) * histImage.rows;
+    }
+
+    // Draw each bin of histogram
+    for (int i = 0; i < 256; i++) {
+        cv::line(histImage, cv::Point(bin_w * i, hist_h),
+                 cv::Point(bin_w * i, hist_h - hist[i]),
+                 cv::Scalar(255), 1, 8, 0);
+    }
+
+    // Display histogram
+    cv::imshow("Histogram", histImage);
+    cv::imwrite("Histogram.jpg", histImage);
+    cv::waitKey(0);
+}
+
+<MethodA.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace cv;
+using namespace std;
+
+// Transfer function: simple linear function
+uchar linearTransferFunction(uchar input, float a, float b) {
+    int temp = static_cast<int>(a * input + b);
+    return static_cast<uchar>(max(0, min(temp, 255)));
+}
+
+// Function to apply transfer function to the image
+void applyTransferFunction(unsigned char* imageData, int width, int height, int BytesPerPixel, float a, float b) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            for (int k = 0; k < BytesPerPixel; k++) {
+                int index = (i * width + j) * BytesPerPixel + k;
+                imageData[index] = linearTransferFunction(imageData[index], a, b);
+            }
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+// Define file pointer and variables
+    FILE *file;
+    int BytesPerPixel;
+    int Width = 596;  // Image width
+    int Height = 340; // Image height
+    
+    // Check for proper syntax
+    if (argc < 3){
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1]" << endl;
+        return 0;
+    }
+    
+    // Check if image is grayscale or color
+    if (argc < 4){
+        BytesPerPixel = 1; // Default is grey image
+    } else {
+        BytesPerPixel = atoi(argv[3]);
+    }
+    
+    // Allocate image data array
+    unsigned char* Imagedata = new unsigned char[Width * Height * BytesPerPixel];
+
+    if (!(file=fopen(argv[1],"rb"))) {
+        cout << "Cannot open file: " << argv[1] << endl;
+        exit(1);
+    }
+    fread(Imagedata, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
+    fclose(file);
+
+    // Define the transfer function parameters
+    float a = 1.5; // set scale factor to improve contrast
+    float b = 60;   // Choose 60 as offset to make the image brighter
+
+    applyTransferFunction(Imagedata, Width, Height, BytesPerPixel, a, b);
+
+    Mat modifiedImage(Height, Width, CV_8UC1, Imagedata);
+    imshow("Modified Image", modifiedImage);
+    imwrite("Enhanced_imageA.jpg", modifiedImage); 
+
+    Mat transferFunctionPlot = Mat::zeros(256, 256, CV_8UC1);
+    for (int i = 0; i < 256; i++) {
+        int output = linearTransferFunction(i, a, b);
+        line(transferFunctionPlot, Point(i, 255), Point(i, 255 - output), Scalar(255), 1);
+    }
+    imshow("Transfer Function", transferFunctionPlot);
+    imwrite("transfer_function.jpg", transferFunctionPlot); 
+
+    waitKey(0);
+
+    delete[] Imagedata;
+    return 0;
+}
+
+<MethodB.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace cv;
+using namespace std;
+
+// Function to calculate and plot histogram
+Mat plotHistogram(Mat& src) {
+    // Establish the number of bins
+    int histSize = 256;
+    // Set the ranges (for B,G,R)
+    float range[] = { 0, 256 };
+    const float* histRange = { range };
+    bool uniform = true, accumulate = false;
+    Mat hist;
+    // Compute the histograms
+    calcHist(&src, 1, 0, Mat(), hist, 1, &histSize, &histRange, uniform, accumulate);
+
+    // Draw the histograms
+    int hist_w = 512, hist_h = 400;
+    int bin_w = cvRound((double)hist_w / histSize);
+    Mat histImage(hist_h, hist_w, CV_8UC1, Scalar(0));
+    // Normalize the result to [0, histImage.rows]
+    normalize(hist, hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+    for (int i = 1; i < histSize; i++) {
+        line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(hist.at<float>(i - 1))),
+             Point(bin_w * i, hist_h - cvRound(hist.at<float>(i))),
+             Scalar(255), 2, 8, 0);
+    }
+    return histImage;
+}
+
+
+int main(int argc, char *argv[]) {
+// Define file pointer and variables
+    FILE *file;
+    int BytesPerPixel;
+    int Width = 596;
+    int Height = 340;
+    
+    // Check for proper syntax
+    if (argc < 3){
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1]" << endl;
+        return 0;
+    }
+    
+    // Check if image is grayscale or color
+    if (argc < 4){
+        BytesPerPixel = 1; // Default is grey image
+    } else {
+        BytesPerPixel = atoi(argv[3]);
+    }
+    
+    // Allocate image data array
+    unsigned char* Imagedata = new unsigned char[Width * Height * BytesPerPixel];
+
+    // Read image (filename specified by first argument) into image data matrix
+    if (!(file=fopen(argv[1],"rb"))) {
+        cout << "Cannot open file: " << argv[1] << endl;
+        exit(1);
+    }
+    fread(Imagedata, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
+    fclose(file);
+
+
+    Mat image(Height, Width, CV_8UC1, Imagedata); /
+
+    Mat histBefore = plotHistogram(image);
+    imshow("Histogram Before", histBefore);
+    imwrite("histogram_beforeB.jpg", histBefore);
+
+    Mat enhancedImage;
+    equalizeHist(image, enhancedImage);
+
+    Mat histAfter = plotHistogram(enhancedImage);
+    imshow("Histogram After", histAfter);
+    imwrite("histogram_afterB.jpg", histAfter); 
+
+    imshow("Original Image", image);
+    imshow("Enhanced Image", enhancedImage);
+    imwrite("enhanced_imageB.jpg", enhancedImage);
+
+    waitKey(0);
+
+    delete[] Imagedata;
+    return 0;
+}
+
+
+<MethodA.cpp>
+f#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace cv;
+using namespace std;
+
+// Transfer function: simple linear function
+uchar linearTransferFunction(uchar input, float a, float b) {
+    int temp = static_cast<int>(a * input + b);
+    return static_cast<uchar>(max(0, min(temp, 255)));
+}
+
+int main(int argc, char *argv[]) {
+    FILE *file;
+    int BytesPerPixel = 3;  // Assuming 24-bit RGB color image
+    int Width = 750;        // Image width (to be set according to your image)
+    int Height = 422;       // Image height (to be set according to your image)
+    
+    if (argc < 3){
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "program_name input_image.raw output_image.raw" << endl;
+        return 0;
+    }
+    
+    // Allocate image data array
+    unsigned char* Imagedata = new unsigned char[Width * Height * BytesPerPixel];
+
+    // Read image into image data matrix
+    if (!(file=fopen(argv[1],"rb"))) {
+        cout << "Cannot open file: " << argv[1] << endl;
+        exit(1);
+    }
+    fread(Imagedata, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
+    fclose(file);
+
+    Mat image(Height, Width, CV_8UC3, Imagedata);
+
+    // Convert from RGB to YUV
+    Mat imageYUV;
+    cvtColor(image, imageYUV, COLOR_RGB2YUV);
+
+    vector<Mat> channels(3);
+    split(imageYUV, channels);
+
+    // Apply transfer function to the Y channel
+    float a = 1.5; // scale factor
+    float b = 0;   // offset
+    for (int y = 0; y < channels[0].rows; y++) {
+        for (int x = 0; x < channels[0].cols; x++) {
+            channels[0].at<uchar>(y, x) = linearTransferFunction(channels[0].at<uchar>(y, x), a, b);
+        }
+    }
+
+    // Combine Y channel back with U and V channels
+    merge(channels, imageYUV);
+
+    // Convert back to RGB
+    Mat resultImage;
+    cvtColor(imageYUV, resultImage, COLOR_YUV2RGB);
+
+    // Save the result image
+    if (!(file = fopen(argv[2], "wb"))) {
+        cout << "Cannot open file: " << argv[2] << endl;
+        exit(1);
+    }
+    fwrite(resultImage.data, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
+    fclose(file);
+
+    // Display the modified image
+    imshow("Modified Image", resultImage);
+    imwrite("ModifiedA.jpg", resultImage);
+
+    waitKey(0);
+
+    delete[] Imagedata;
+    return 0;
+}
+
+<MethodB.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace cv;
+using namespace std;
+void RGBtoYUV(const Mat &src, Mat &dst) {
+    dst = Mat::zeros(src.size(), src.type());
+    for (int y = 0; y < src.rows; y++) {
+        for (int x = 0; x < src.cols; x++) {
+            Vec3b rgb = src.at<Vec3b>(y, x);
+            float R = rgb[2];
+            float G = rgb[1];
+            float B = rgb[0];
+            uchar Y = saturate_cast<uchar>(0.257 * R + 0.504 * G + 0.098 * B + 16);
+            uchar U = saturate_cast<uchar>(-0.148 * R - 0.291 * G + 0.439 * B + 128);
+            uchar V = saturate_cast<uchar>(0.439 * R - 0.368 * G - 0.071 * B + 128);
+            dst.at<Vec3b>(y, x) = Vec3b(Y, U, V);
+        }
+    }
+}
+
+void YUVtoRGB(const Mat &src, Mat &dst) {
+    dst = Mat::zeros(src.size(), src.type());
+    for (int y = 0; y < src.rows; y++) {
+        for (int x = 0; x < src.cols; x++) {
+            Vec3b yuv = src.at<Vec3b>(y, x);
+            float Y = yuv[0];
+            float U = yuv[1];
+            float V = yuv[2];
+            uchar R = saturate_cast<uchar>(1.164 * (Y - 16) + 1.596 * (V - 128));
+            uchar G = saturate_cast<uchar>(1.164 * (Y - 16) - 0.813 * (V - 128) - 0.391 * (U - 128));
+            uchar B = saturate_cast<uchar>(1.164 * (Y - 16) + 2.018 * (U - 128));
+            dst.at<Vec3b>(y, x) = Vec3b(R, G, B);
+        }
+    }
+}
+Mat plotHistogram(Mat& src) {
+    // Establish the number of bins
+    int histSize = 256;
+    // Set the ranges (for B,G,R)
+    float range[] = { 0, 256 };
+    const float* histRange = { range };
+    bool uniform = true, accumulate = false;
+    Mat hist;
+    // Compute the histograms
+    calcHist(&src, 1, 0, Mat(), hist, 1, &histSize, &histRange, uniform, accumulate);
+
+    // Draw the histograms
+    int hist_w = 512, hist_h = 400;
+    int bin_w = cvRound((double)hist_w / histSize);
+    Mat histImage(hist_h, hist_w, CV_8UC1, Scalar(0));
+    // Normalize the result to [0, histImage.rows]
+    normalize(hist, hist, 0, histImage.rows, NORM_MINMAX, -1, Mat());
+    for (int i = 1; i < histSize; i++) {
+        line(histImage, Point(bin_w * (i - 1), hist_h - cvRound(hist.at<float>(i - 1))),
+             Point(bin_w * i, hist_h - cvRound(hist.at<float>(i))),
+             Scalar(255), 2, 8, 0);
+    }
+    return histImage;
+}
+
+
+// Custom function to equalize histogram
+void equalizeHistCustom(Mat &src, Mat &dst) {
+    int histSize = 256;
+    float range[] = { 0, 256 };
+    const float* histRange = { range };
+
+    // Calculate histogram
+    Mat hist;
+    calcHist(&src, 1, 0, Mat(), hist, 1, &histSize, &histRange, true, false);
+
+    // Create Cumulative Distribution Function (CDF)
+    Mat cdf;
+    hist.copyTo(cdf);
+    for (int i = 1; i < histSize; i++) {
+        cdf.at<float>(i) += cdf.at<float>(i - 1);
+    }
+
+    // Normalize CDF
+    cdf /= (src.rows * src.cols);
+    cdf *= 255.0;
+
+    // Apply equalization
+    dst = src.clone();
+    for (int y = 0; y < src.rows; y++) {
+        for (int x = 0; x < src.cols; x++) {
+            int pixelVal = src.at<uchar>(y, x);
+            int equalizedVal = static_cast<int>(cdf.at<float>(pixelVal));
+            dst.at<uchar>(y, x) = saturate_cast<uchar>(equalizedVal);
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+    FILE *file;
+    int BytesPerPixel = 3;
+    int Width = 750;
+    int Height = 422;
+    
+    // Check for proper syntax
+    if (argc < 3){
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "program_name input_image.raw output_image.raw [BytesPerPixel = 1]" << endl;
+        return 0;
+    }
+    
+    // Check if image is grayscale or color
+    if (argc < 3){
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "program_name input_image.raw output_image.raw" << endl;
+        return 0;
+    }
+    
+    // Allocate image data array
+    unsigned char* Imagedata = new unsigned char[Width * Height * BytesPerPixel];
+
+    // Read image (filename specified by first argument) into image data matrix
+    if (!(file=fopen(argv[1],"rb"))) {
+        cout << "Cannot open file: " << argv[1] << endl;
+        exit(1);
+    }
+    fread(Imagedata, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
+    fclose(file);
+
+    Mat image(Height, Width, CV_8UC3, Imagedata); // Assuming 24-bit RGB color
+
+    // Convert from RGB to YUV
+    Mat imageYUV;
+    RGBtoYUV(image, imageYUV);
+
+    vector<Mat> channels(3);
+    split(imageYUV, channels);
+
+    // Apply custom histogram equalization to the Y channel
+    Mat yChannelEqualized;
+    equalizeHistCustom(channels[0], yChannelEqualized);
+
+    // Combine Y channel back with U and V channels
+    channels[0] = yChannelEqualized;
+    Mat resultImage;
+    merge(channels, imageYUV);
+
+    // Convert back to RGB
+    YUVtoRGB(imageYUV, resultImage);
+
+    if (!(file = fopen(argv[2], "wb"))) {
+        cout << "Cannot open file: " << argv[2] << endl;
+        exit(1);
+    }
+    fwrite(resultImage.data, sizeof(unsigned char), Width * Height * BytesPerPixel, file);
+    fclose(file);
+
+    // Display and save results
+    imshow("Original Image", image);
+    imshow("Enhanced Image", resultImage);
+    imwrite("ModifiedB.jpg", resultImage);
+
+    waitKey(0);
+
+    delete[] Imagedata;
+    return 0;
+}
+
+<Gaussian.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace cv;
+using namespace std;
+
+// Function to create a Gaussian kernel
+Mat createGaussianKernel(int filterSize, double sigma) {
+    Mat kernel = Mat(filterSize, filterSize, CV_64F);
+    double r, s = 2.0 * sigma * sigma;
+
+    // sum is for normalization
+    double sum = 0.0;
+
+    // Generate kernel
+    for (int x = -filterSize/2; x <= filterSize/2; x++) {
+        for (int y = -filterSize/2; y <= filterSize/2; y++) {
+            r = sqrt(x*x + y*y);
+            kernel.at<double>(x + filterSize/2, y + filterSize/2) = (exp(-(r*r)/s)) / (M_PI * s);
+            sum += kernel.at<double>(x + filterSize/2, y + filterSize/2);
+        }
+    }
+
+    // Normalize the kernel
+    for (int i = 0; i < filterSize; ++i)
+        for (int j = 0; j < filterSize; ++j)
+            kernel.at<double>(i, j) /= sum;
+
+    return kernel;
+}
+
+void saveRawImage(const char* filename, const Mat& image) {
+    FILE* file = fopen(filename, "wb");
+    if (!file) {
+        cerr << "Cannot open file for writing: " << filename << endl;
+        return;
+    }
+
+    int width = image.cols;
+    int height = image.rows;
+    int bytesPerPixel = image.channels(); 
+    cout << "width: " << width << endl;
+    cout << "height: " << height << endl;
+    cout << "bytesPerPixel: " << bytesPerPixel << endl;
+    size_t totalBytes = width * height * bytesPerPixel;
+
+    size_t written = fwrite(image.data, sizeof(unsigned char), totalBytes, file);
+
+    if (written != totalBytes) {
+        cerr << "Error writing the image data to file: " << filename << endl;
+    } else {
+        cout << "Image successfully saved as: " << filename << endl;
+    }
+    fclose(file);
+}
+
+// Function to apply Gaussian filter
+void ApplyGaussianFilter(Mat &inputImage, Mat &outputImage, int filterSize, double sigma) {
+    int pad = filterSize / 2;
+    Mat paddedInput;
+    Mat kernel = createGaussianKernel(filterSize, sigma);
+
+    copyMakeBorder(inputImage, paddedInput, pad, pad, pad, pad, BORDER_REPLICATE);
+
+    for (int i = pad; i < inputImage.rows + pad; ++i) {
+        for (int j = pad; j < inputImage.cols + pad; ++j) {
+            double sum = 0.0; 
+            for (int fi = -pad; fi <= pad; ++fi) {
+                for (int fj = -pad; fj <= pad; ++fj) {
+                    sum += paddedInput.at<uchar>(i + fi, j + fj) * kernel.at<double>(fi + pad, fj + pad);
+                }
+            }
+            outputImage.at<uchar>(i - pad, j - pad) = static_cast<uchar>(sum);
+        }
+    }
+}
+int main(int argc, char** argv) {
+    // Check for proper syntax
+    if (argc != 3) {
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "usage: " << argv[0] << " input_image.raw output_image.jpg" << endl;
+        return 0;
+    }
+
+    const int width = 768;
+    const int height = 512;
+
+    // Read image (filename specified by first argument) into Mat object
+    Mat inputImage(height, width, CV_8UC1);
+    FILE* file;
+    if (!(file = fopen(argv[1], "rb"))) {
+        cout << "Cannot open file: " << argv[1] <<endl;
+        return 1;
+    }
+    fread(inputImage.data, sizeof(unsigned char), height * width, file);
+    fclose(file);
+
+    // Create output Mat object with the same size and type as inputImage
+    Mat outputImage = Mat::zeros(inputImage.size(), inputImage.type());
+
+    // Apply uniform filter to the input image
+    ApplyGaussianFilter(inputImage, outputImage, 3, 3);
+
+    // Display the original and filtered images
+    namedWindow("Original Image", WINDOW_AUTOSIZE);
+    imshow("Original Image", inputImage);
+
+    namedWindow("Filtered Image", WINDOW_AUTOSIZE);
+    imshow("Filtered Image", outputImage);
+    imwrite("Gaussian_fixed.jpg", outputImage);
+
+    waitKey(0); // Wait for a keystroke in the window
+
+    string rawOutputFilename = string(argv[2]);
+    saveRawImage(rawOutputFilename.c_str(), outputImage);
+    cout << "Saved filtered image as RAW file: " << rawOutputFilename << endl;
+
+    return 0;
+}
+
+<unform.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace cv;
+using namespace std;
+
+void ApplyUniformFilter(Mat &inputImage, Mat &outputImage) {
+    // Assuming filterSize is odd and square
+    int filterSize = 3;
+    int pad = filterSize / 2;
+    Mat paddedInput;
+    
+    // Create padded version of inputImage
+    copyMakeBorder(inputImage, paddedInput, pad, pad, pad, pad, BORDER_REPLICATE);
+    
+    for (int i = pad; i < inputImage.rows + pad; ++i) {
+        for (int j = pad; j < inputImage.cols + pad; ++j) {
+            int sum = 0; 
+            for (int fi = -pad; fi <= pad; ++fi) {
+                for (int fj = -pad; fj <= pad; ++fj) {
+                    sum += (int)paddedInput.at<uchar>(i + fi, j + fj); // Cast uchar to int
+                }
+            }
+            outputImage.at<uchar>(i - pad, j - pad) = sum / (filterSize * filterSize);
+        }
+    }
+}
+void saveRawImage(const char* filename, const Mat& image) {
+    FILE* file = fopen(filename, "wb");
+    if (!file) {
+        cerr << "Cannot open file: " << filename << endl;
+        exit(1);
+    }
+
+    fwrite(image.data, sizeof(uchar), image.total(), file);
+    fclose(file);
+}
+
+int main(int argc, char** argv) {
+    // Check for proper syntax
+    if (argc != 3) {
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "usage: " << argv[0] << " input_image.raw output_image.jpg" << endl;
+        return 0;
+    }
+
+    const int width = 768;
+    const int height = 512;
+
+    // Read image (filename specified by first argument) into Mat object
+    Mat inputImage(height, width, CV_8UC1);
+    FILE* file;
+    if (!(file = fopen(argv[1], "rb"))) {
+        cout << "Cannot open file: " << argv[1] <<endl;
+        return 1;
+    }
+    fread(inputImage.data, sizeof(unsigned char), height * width, file);
+    fclose(file);
+
+    // Create output Mat object with the same size and type as inputImage
+    Mat outputImage = Mat::zeros(inputImage.size(), inputImage.type());
+
+    // Apply uniform filter to the input image
+    ApplyUniformFilter(inputImage, outputImage);
+
+    // Display the original and filtered images
+    namedWindow("Original Image", WINDOW_AUTOSIZE);
+    imshow("Original Image", inputImage);
+
+    namedWindow("Filtered Image", WINDOW_AUTOSIZE);
+    imshow("Filtered Image", outputImage);
+    imwrite("uniform_fixed.jpg", outputImage);
+
+    waitKey(0); // Wait for a keystroke in the window
+
+
+    string rawOutputFilename = string(argv[2]);
+    saveRawImage(rawOutputFilename.c_str(), outputImage);
+    cout << "Saved filtered image as RAW file: " << rawOutputFilename << endl;
+
+    return 0;
+}
+
+<PSNR.cpp>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+using namespace cv;
+
+// Function to read a RAW image file into a Mat object
+Mat readRawImage(const char* filename, int width, int height) {
+    FILE* file = fopen(filename, "rb");
+    cout << "Fopen success. Continuing..." << endl;
+
+    if (!file) {
+        cerr << "Cannot open file: " << filename << endl;
+        exit(1);
+    }
+
+    Mat image = Mat(height, width, CV_8UC1);
+    fread(image.data, sizeof(uchar), width * height, file);
+    fclose(file);
+
+    return image;
+}
+
+// Function to compute MSE between two images
+double computeMSE(const Mat& img1, const Mat& img2) {
+    if (img1.size() != img2.size() || img1.type() != img2.type()) {
+        cerr << "Error: Images must have the same dimensions and type" << endl;
+        exit(1);
+    }
+
+    double mse = 0;
+    for (int i = 0; i < img1.rows; ++i) {
+        for (int j = 0; j < img1.cols; ++j) {
+            mse += pow(img1.at<uchar>(i, j) - img2.at<uchar>(i, j), 2);
+        }
+    }
+    mse /= (img1.rows * img1.cols);
+    return mse;
+}
+
+// Function to compute PSNR
+double computePSNR(const Mat& img1, const Mat& img2) {
+    double mse = computeMSE(img1, img2);
+    if (mse == 0) {
+        return INFINITY;
+    }
+    return 10 * log10(pow(255, 2) / mse);
+}
+
+int main(int argc, char** argv) {
+    cout << "Number of arguments: " << argc << endl;
+    for (int i = 0; i < argc; ++i) {
+        cout << "Argument " << i << ": " << argv[i] << endl;
+    }
+
+    if (argc != 5) {
+        cout << "Usage: " << argv[0] << " original_image.raw denoised_image.raw [width height]" << endl;
+        return 0;
+    }
+
+    int width = atoi(argv[3]);
+    int height = atoi(argv[4]);
+
+    Mat originalImage = readRawImage(argv[1], width, height);
+    Mat denoisedImage = readRawImage(argv[2], width, height);
+    
+    cout << "Arguments are correct. Continuing..." << endl;
+
+    double psnr = computePSNR(originalImage, denoisedImage);
+    cout << "Calculation finished. Continuing..." << endl;
+
+    cout << "PSNR: " << psnr << " dB" << endl;
+
+    return 0;
+}
+
+<hw1p2b.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+using namespace cv;
+using namespace std;
+
+// Function to apply bilateral filter
+void ApplyBilateralFilter(const Mat &src, Mat &dst, int d, double sigmaColor, double sigmaSpace) {
+    dst = Mat(src.size(), src.type());
+    for (int i = 0; i < src.rows; i++) {
+        for (int j = 0; j < src.cols; j++) {
+            double iFiltered = 0;
+            double wP = 0;
+            // Go over the window
+            for (int k = -d; k <= d; k++) {
+                for (int l = -d; l <= d; l++) {
+                    int newI = min(max(i + k, 0), src.rows - 1);
+                    int newJ = min(max(j + l, 0), src.cols - 1);
+                    double gi = exp(-((k * k + l * l) / (2 * sigmaSpace * sigmaSpace)));
+                    double gs = exp(-((src.at<uchar>(i, j) - src.at<uchar>(newI, newJ)) * (src.at<uchar>(i, j) - src.at<uchar>(newI, newJ)) / (2 * sigmaColor * sigmaColor)));
+                    double w = gi * gs;
+                    iFiltered += src.at<uchar>(newI, newJ) * w;
+                    wP += w;
+                }
+            }
+            dst.at<uchar>(i, j) = round(iFiltered / wP);
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+    // Check for proper syntax
+    if (argc < 5) {
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "usage: " << argv[0] << " input_image.raw output_image.raw width height" << endl;
+        return -1;
+    }
+
+    const int Width = atoi(argv[3]); 
+    const int Height = atoi(argv[4]); 
+    
+    unsigned char* Imagedata = new unsigned char[Width * Height];
+
+    // Read image (filename specified by first argument) into image data matrix
+    FILE *file;
+    if (!(file = fopen(argv[1], "rb"))) {
+        cout << "Cannot open file: " << argv[1] << endl;
+        return -1;
+    }
+    fread(Imagedata, sizeof(unsigned char), Width * Height, file);
+    fclose(file);
+
+    // Initialize Mat object from array
+    Mat image(Height, Width, CV_8UC1, Imagedata);
+
+    // Apply bilateral filter
+    Mat filteredImage;
+    double sigmaColor = 30.0; 
+    double sigmaSpace = 30.0; 
+    ApplyBilateralFilter(image, filteredImage, 5, sigmaColor, sigmaSpace);
+
+    // Save the filtered image to a raw file
+    if (!(file = fopen(argv[2], "wb"))) {
+        cout << "Cannot open file: " << argv[2] << endl;
+        return -1;
+    }
+    fwrite(filteredImage.data, sizeof(unsigned char), Width * Height, file);
+    fclose(file);
+    cout << "Filtered image saved to " << argv[2] << endl;
+
+    // Display the original and filtered images
+    namedWindow("Original Image", WINDOW_AUTOSIZE);
+    imshow("Original Image", image);
+    namedWindow("Filtered Image", WINDOW_AUTOSIZE);
+    imshow("Filtered Image", filteredImage);
+    imwrite("Bilateral_fixed.jpg", filteredImage);
+
+    waitKey(0);
+
+    // Cleanup
+    delete[] Imagedata;
+
+    return 0;
+}
+
+<hw1p2c.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/photo.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace cv;
+using namespace std;
+void saveRawImage(const char* filename, const Mat& image) {
+    FILE* file = fopen(filename, "wb");
+    if (!file) {
+        cerr << "Cannot open file for writing: " << filename << endl;
+        return;
+    }
+
+    int width = image.cols;
+    int height = image.rows;
+    int bytesPerPixel = image.channels(); 
+    cout << "width: " << width << endl;
+    cout << "height: " << height << endl;
+    cout << "bytesPerPixel: " << bytesPerPixel << endl;
+    size_t totalBytes = width * height * bytesPerPixel;
+
+    size_t written = fwrite(image.data, sizeof(unsigned char), totalBytes, file);
+
+    if (written != totalBytes) {
+        cerr << "Error writing the image data to file: " << filename << endl;
+    } else {
+        cout << "Image successfully saved as: " << filename << endl;
+    }
+    fclose(file);
+}
+int main(int argc, char *argv[]) {
+    // Check for proper syntax
+    if (argc < 5) {
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "usage: " << argv[0] << " input_image.raw output_image.raw width height" << endl;
+        return -1;
+    }
+
+    const int Width = atoi(argv[3]); 
+    const int Height = atoi(argv[4]); 
+    
+    unsigned char* Imagedata = new unsigned char[Width * Height];
+
+    // Read image 
+    FILE *file;
+    if (!(file = fopen(argv[1], "rb"))) {
+        cout << "Cannot open file: " << argv[1] << endl;
+        delete[] Imagedata;
+        return -1;
+    }
+    fread(Imagedata, sizeof(unsigned char), Width * Height, file);
+    fclose(file);
+
+    // Initialize Mat object from array
+    Mat image(Height, Width, CV_8UC1, Imagedata);
+    Mat filteredImage;
+
+    // NLM Filter parameters
+    float h = 10; // Luminance filter strength
+    float hForColorComponents = 10; // Color filter strength 
+    int templateWindowSize = 7; // Odd number (3, 5, 7...)
+    int searchWindowSize = 21; // Odd number (21, 31, 41...)
+
+    // Apply Non-Local Means Denoising
+    fastNlMeansDenoising(image, filteredImage, h, templateWindowSize, searchWindowSize);
+
+    // Save the filtered image to a raw file
+    if (!(file = fopen(argv[2], "wb"))) {
+        cout << "Cannot open file: " << argv[2] << endl;
+        delete[] Imagedata;
+        return -1;
+    }
+    fwrite(filteredImage.data, sizeof(unsigned char), Width * Height, file);
+    fclose(file);
+    cout << "Filtered image saved to " << argv[2] << endl;
+
+    // Display the original and filtered images
+    namedWindow("Original Image", WINDOW_AUTOSIZE);
+    imshow("Original Image", image);
+    namedWindow("Filtered Image", WINDOW_AUTOSIZE);
+    imshow("Filtered Image", filteredImage);
+
+    imwrite("NLM_filtered.jpg", filteredImage);
+
+    string rawOutputFilename = string(argv[2]);
+    saveRawImage(rawOutputFilename.c_str(), filteredImage);
+    cout << "Saved filtered image as RAW file: " << rawOutputFilename << endl;
+
+    waitKey(0);
+
+    // Cleanup
+    delete[] Imagedata;
+
+    return 0;
+}
+
+<hw1p2d.cpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/photo.hpp>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace cv;
+using namespace std;
+void saveRawImage(const char* filename, const Mat& image) {
+    FILE* file = fopen(filename, "wb");
+    if (!file) {
+        cerr << "Cannot open file for writing: " << filename << endl;
+        return;
+    }
+
+    int width = image.cols;
+    int height = image.rows;
+    int bytesPerPixel = image.channels(); 
+    cout << "width: " << width << endl;
+    cout << "height: " << height << endl;
+    cout << "bytesPerPixel: " << bytesPerPixel << endl;
+    size_t totalBytes = width * height * bytesPerPixel;
+
+    size_t written = fwrite(image.data, sizeof(unsigned char), totalBytes, file);
+
+    if (written != totalBytes) {
+        cerr << "Error writing the image data to file: " << filename << endl;
+    } else {
+        cout << "Image successfully saved as: " << filename << endl;
+    }
+    fclose(file);
+}
+int main(int argc, char *argv[]) {
+    // Check for proper syntax
+    if (argc < 5) {
+        cout << "Syntax Error - Incorrect Parameter Usage:" << endl;
+        cout << "usage: " << argv[0] << " input_image.raw output_image.raw width height" << endl;
+        return -1;
+    }
+
+    const int Width = atoi(argv[3]); 
+    const int Height = atoi(argv[4]); 
+    
+    unsigned char* Imagedata = new unsigned char[Width * Height * 3]; // 3 channels for RGB
+
+    // Read image (filename specified by first argument) into image data matrix
+    FILE *file;
+    if (!(file = fopen(argv[1], "rb"))) {
+        cout << "Cannot open file: " << argv[1] << endl;
+        delete[] Imagedata;
+        return -1;
+    }
+    fread(Imagedata, sizeof(unsigned char), Width * Height * 3, file); // Read 3 channels
+    fclose(file);
+
+    // Initialize Mat object from array
+    Mat image(Height, Width, CV_8UC3, Imagedata);
+    Mat correctedImage; //Change RGB to BGR for opencv Processing
+    cvtColor(image, correctedImage, COLOR_RGB2BGR);
+
+    Mat filteredImage;
+
+    // NLM Filter parameters
+    float h = 10; // Luminance filter strength
+    float hForColorComponents = 10; // Color filter strength (if using a color image)
+    int templateWindowSize = 7; // Odd number (3, 5, 7...)
+    int searchWindowSize = 21; // Odd number (21, 31, 41...)
+
+    // Apply Non-Local Means Denoising
+    fastNlMeansDenoisingColored(correctedImage, filteredImage, h, hForColorComponents, templateWindowSize, searchWindowSize);
+
+    // Save the filtered image to a raw file
+    if (!(file = fopen(argv[2], "wb"))) {
+        cout << "Cannot open file: " << argv[2] << endl;
+        delete[] Imagedata;
+        return -1;
+    }
+    fwrite(filteredImage.data, sizeof(unsigned char), Width * Height, file);
+    fclose(file);
+    cout << "Filtered image saved to " << argv[2] << endl;
+
+    // Display the original and filtered images
+    namedWindow("Original Image", WINDOW_AUTOSIZE);
+    imshow("Original Image", image);
+    namedWindow("Filtered Image", WINDOW_AUTOSIZE);
+    imshow("Filtered Image", filteredImage);
+
+    imwrite("NLM_filtered_RBG.jpg", filteredImage);
+
+    string rawOutputFilename = string(argv[2]);
+    saveRawImage(rawOutputFilename.c_str(), filteredImage);
+    cout << "Saved filtered image as RAW file: " << rawOutputFilename << endl;
+
+    waitKey(0);
+
+    // Cleanup
+    delete[] Imagedata;
+
+    return 0;
+}

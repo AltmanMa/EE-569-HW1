@@ -40,10 +40,9 @@ int main(int argc, char *argv[])
 	
 	// Check if image is grayscale or color
 	if (argc < 4) {
-    	BytesPerPixel = 1; // 默认为灰度图像
+    	BytesPerPixel = 1; 
 	} else {
     	BytesPerPixel = atoi(argv[3]);
-    // 检查是否指定了图像尺寸
     	if (argc >= 5) {
         	Width = atoi(argv[4]);
         	if (argc >= 6) {
@@ -69,13 +68,11 @@ int main(int argc, char *argv[])
         }
     }
 
-	// 打开文件进行读取
 	if (!(file = fopen(argv[1], "rb"))) {
     	cout << "Cannot open file: " << argv[1] << endl;
     	exit(1);
 	}
 
-	// 根据图像的宽度、高度和每像素字节大小读取数据
 	for (int i = 0; i < Height; i++) {
     	for (int j = 0; j < Width; j++) {
         	fread(Imagedata[i][j], sizeof(unsigned char), BytesPerPixel, file);
